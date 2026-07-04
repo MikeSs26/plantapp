@@ -5,3 +5,5 @@ db.sqlite3
 anaconda/
 node_modules/
 dist/
+plantapp_venv/
+staticfiles/
