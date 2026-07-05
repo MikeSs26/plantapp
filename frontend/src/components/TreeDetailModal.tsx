@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CalendarDays,
   Heart,
@@ -157,7 +158,18 @@ export default function TreeDetailModal({ tree, onClose, onLike, onDeleted, onCo
               </h2>
               <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1">
-                  <UserRound size={12} /> {tree.planted_by || 'Anónimo'}
+                  <UserRound size={12} />
+                  {tree.author_username ? (
+                    <Link
+                      to={`/app/users/${tree.author_username}`}
+                      onClick={onClose}
+                      className="font-medium transition hover:text-brand-600 hover:underline"
+                    >
+                      {tree.planted_by || `@${tree.author_username}`}
+                    </Link>
+                  ) : (
+                    tree.planted_by || 'Anónimo'
+                  )}
                 </span>
                 <span className="flex items-center gap-1">
                   <CalendarDays size={12} /> {formatDate(tree.planted_at)}
@@ -222,9 +234,19 @@ export default function TreeDetailModal({ tree, onClose, onLike, onDeleted, onCo
                   <CommentAvatar comment={c} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm">
-                      <span className="font-semibold text-slate-900 dark:text-white">
-                        {c.author_name || 'Anónimo'}
-                      </span>{' '}
+                      {c.author_username ? (
+                        <Link
+                          to={`/app/users/${c.author_username}`}
+                          onClick={onClose}
+                          className="font-semibold text-slate-900 transition hover:text-brand-600 hover:underline dark:text-white"
+                        >
+                          {c.author_name || `@${c.author_username}`}
+                        </Link>
+                      ) : (
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          {c.author_name || 'Anónimo'}
+                        </span>
+                      )}{' '}
                       <span className="text-xs text-slate-400">{timeAgo(c.created_at)}</span>
                     </p>
                     <p className="mt-0.5 text-sm break-words text-slate-700 dark:text-slate-300">

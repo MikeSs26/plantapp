@@ -8,6 +8,7 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,7 +19,7 @@ export default function Register() {
     setError('');
     setBusy(true);
     try {
-      await register(email, password, displayName);
+      await register(email, password, username, displayName);
       navigate('/app');
     } catch (err) {
       // Mostramos el primer error que devuelva el backend (email en uso, password débil, etc.)
@@ -59,6 +60,23 @@ export default function Register() {
             onChange={(e) => setDisplayName(e.target.value)}
             required
           />
+          <div>
+            <input
+              className={`${inputClass} w-full`}
+              type="text"
+              placeholder="Nombre de usuario (ej. maria_verde)"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              minLength={3}
+              maxLength={30}
+              pattern="[a-zA-Z0-9_]{3,30}"
+              title="3–30 caracteres: letras, números o guion bajo"
+              required
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Tu identificador único para tu perfil público.
+            </p>
+          </div>
           <input
             className={inputClass}
             type="email"

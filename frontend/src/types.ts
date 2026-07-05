@@ -6,6 +6,7 @@ export interface Tree {
   longitude: number;
   user?: number;
   planted_by?: string;
+  author_username?: string; // author's handle, for linking to their profile
   planted_at?: string; // Django lo crea solo, por eso es opcional (?)
   likes_count?: number;
   liked_by_me?: boolean;
@@ -14,6 +15,7 @@ export interface Tree {
 
 export interface LeaderboardEntry {
   id: number;
+  username: string;
   display_name: string;
   tree_count: number;
 }
@@ -23,6 +25,7 @@ export interface Comment {
   tree: number;
   user: number;
   author_name: string;
+  author_username: string;
   author_avatar: string;
   text: string;
   created_at: string;
@@ -54,6 +57,7 @@ export interface NewTree {
 export interface User {
   id: number;
   email: string;
+  username: string;
   display_name: string;
   bio: string;
   avatar_url: string;
@@ -64,10 +68,25 @@ export interface User {
   likes_received?: number;
 }
 
+// Public profile of any user (no email exposed).
+export interface PublicProfile {
+  id: number;
+  username: string;
+  display_name: string;
+  bio: string;
+  avatar_url: string;
+  location: string;
+  role: 'user' | 'admin';
+  created_at: string;
+  trees_count: number;
+  likes_received: number;
+}
+
 // Usuario visto desde el panel de administración (incluye estado e id).
 export interface AdminUser {
   id: number;
   email: string;
+  username: string;
   display_name: string;
   avatar_url: string;
   location: string;

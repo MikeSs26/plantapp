@@ -49,6 +49,10 @@ class TreeViewSet(viewsets.ModelViewSet):
             )
         if params.get("mine") == "1":
             qs = qs.filter(user=user)
+        # Filter by a specific author (used by public profile pages).
+        author_id = params.get("user")
+        if author_id:
+            qs = qs.filter(user_id=author_id)
 
         if params.get("ordering") == "likes":
             return qs.order_by("-likes_count", "-planted_at")
@@ -172,6 +176,7 @@ class LeaderboardView(APIView):
         data = [
             {
                 "id": u.id,
+                "username": u.username,
                 "display_name": u.display_name or u.email,
                 "tree_count": u.tree_count,
             }

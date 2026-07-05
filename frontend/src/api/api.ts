@@ -7,6 +7,7 @@ import type {
   LeaderboardEntry,
   NewTree,
   Paginated,
+  PublicProfile,
   Stats,
   Tree,
   User,
@@ -96,8 +97,8 @@ api.interceptors.response.use(
 
 // --- Endpoints de autenticación ---
 export const authApi = {
-  register: (email: string, password: string, display_name: string) =>
-    api.post<User>('auth/register/', { email, password, display_name }),
+  register: (email: string, password: string, username: string, display_name: string) =>
+    api.post<User>('auth/register/', { email, password, username, display_name }),
   login: (email: string, password: string) =>
     api.post<{ access: string; refresh: string }>('auth/login/', { email, password }),
   me: () => api.get<User>('auth/me/'),
@@ -105,9 +106,15 @@ export const authApi = {
 
 // Actualiza el perfil del usuario autenticado.
 export const updateMe = async (
-  data: Partial<Pick<User, 'display_name' | 'bio' | 'location' | 'avatar_url'>>
+  data: Partial<Pick<User, 'username' | 'display_name' | 'bio' | 'location' | 'avatar_url'>>
 ) => {
   const response = await api.patch<User>('auth/me/', data);
+  return response.data;
+};
+
+// Public profile of any user, by username.
+export const getUserProfile = async (username: string): Promise<PublicProfile> => {
+  const response = await api.get<PublicProfile>(`users/${username}/`);
   return response.data;
 };
 
@@ -116,6 +123,7 @@ export interface TreeQuery {
   page?: number;
   search?: string;
   mine?: boolean;
+  user?: number; // filter to a specific author (public profile pages)
   ordering?: 'likes';
 }
 
@@ -124,6 +132,7 @@ export const getTrees = async (query: TreeQuery = {}): Promise<Paginated<Tree>> 
   if (query.page) params.page = query.page;
   if (query.search) params.search = query.search;
   if (query.mine) params.mine = 1;
+  if (query.user) params.user = query.user;
   if (query.ordering) params.ordering = query.ordering;
   const response = await api.get<Paginated<Tree>>('trees/', { params });
   return response.data;

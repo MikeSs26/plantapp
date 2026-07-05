@@ -18,9 +18,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from users.views import PublicProfileView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),  # /api/auth/register|login|refresh|me
-    path('api/admin/', include('users.admin_urls')),  # /api/admin/users|stats (solo rol admin)
+    path('api/admin/', include('users.admin_urls')),  # /api/admin/users|stats (admin role only)
+    path('api/users/<str:username>/', PublicProfileView.as_view(), name='public-profile'),
     path('api/', include('plantapp.urls')),     # /api/trees/
 ]

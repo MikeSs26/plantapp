@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { CalendarDays, Heart, MessageCircle, TreePine, UserRound } from 'lucide-react';
 import { formatDate } from '../lib/format';
 import type { Tree } from '../types';
@@ -32,7 +33,18 @@ export default function TreeCard({ tree, onLike, onOpen }: Props) {
               {tree.species || 'Especie desconocida'}
             </h3>
             <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-              <UserRound size={12} /> {tree.planted_by || 'Anónimo'}
+              <UserRound size={12} />
+              {tree.author_username ? (
+                <Link
+                  to={`/app/users/${tree.author_username}`}
+                  onClick={(e) => e.stopPropagation()} // don't open the modal
+                  className="font-medium transition hover:text-brand-600 hover:underline"
+                >
+                  {tree.planted_by || `@${tree.author_username}`}
+                </Link>
+              ) : (
+                <span>{tree.planted_by || 'Anónimo'}</span>
+              )}
               <span className="mx-1">·</span>
               <CalendarDays size={12} /> {formatDate(tree.planted_at)}
             </p>

@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(user?.display_name ?? '');
+  const [username, setUsername] = useState(user?.username ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
   const [location, setLocation] = useState(user?.location ?? '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? '');
@@ -63,6 +64,7 @@ export default function ProfilePage() {
     try {
       const updated = await updateMe({
         display_name: displayName,
+        username,
         bio,
         location,
         avatar_url: avatarUrl,
@@ -204,6 +206,31 @@ export default function ProfilePage() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
+              Nombre de usuario
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400">
+                @
+              </span>
+              <input
+                className={`${inputClass} w-full pl-8`}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="tu_usuario"
+                minLength={3}
+                maxLength={30}
+                pattern="[a-zA-Z0-9_]{3,30}"
+                title="3–30 caracteres: letras, números o guion bajo"
+                required
+              />
+            </div>
+            <p className="text-xs text-slate-400">
+              Tu identificador único. Aparece en la URL de tu perfil público.
+            </p>
           </div>
 
           <div className="mt-4 flex flex-col gap-1">

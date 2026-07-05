@@ -8,8 +8,15 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.shortcuts import get_object_or_404
+
 from .permissions import IsAdminRole
-from .serializers import AdminUserSerializer, RegisterSerializer, UserSerializer
+from .serializers import (
+    AdminUserSerializer,
+    PublicUserSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
 
 User = get_user_model()
 
@@ -30,6 +37,20 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class PublicProfileView(generics.RetrieveAPIView):
+    """Public profile of any user, looked up case-insensitively by username."""
+
+    serializer_class = PublicUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        qs = User.objects.annotate(
+            trees_count=Count("trees", distinct=True),
+            likes_received=Count("trees__likes", distinct=True),
+        )
+        return get_object_or_404(qs, username__iexact=self.kwargs["username"])
 
 
 class AdminUserViewSet(viewsets.ModelViewSet):

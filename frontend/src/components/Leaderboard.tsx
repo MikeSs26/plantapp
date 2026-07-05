@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { TreePine, Trophy } from 'lucide-react';
 import { getLeaderboard } from '../api/api';
 import { useAuth } from '../auth/AuthContext';
@@ -51,7 +52,16 @@ export default function Leaderboard({ refreshKey }: { refreshKey?: number }) {
                   {i + 1}
                 </span>
                 <span className="flex-1 truncate font-medium text-slate-800 dark:text-slate-100">
-                  {e.display_name}
+                  {e.username ? (
+                    <Link
+                      to={`/app/users/${e.username}`}
+                      className="transition hover:text-brand-600 hover:underline"
+                    >
+                      {e.display_name}
+                    </Link>
+                  ) : (
+                    e.display_name
+                  )}
                   {isMe && (
                     <span className="ml-1 text-xs text-brand-600 dark:text-brand-300">(tú)</span>
                   )}

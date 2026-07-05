@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import ProfilePage from './pages/ProfilePage';
 import Register from './pages/Register';
 import TreesPage from './pages/TreesPage';
+import UserProfilePage from './pages/UserProfilePage';
 
 function App() {
   return (
@@ -36,6 +37,14 @@ function App() {
           <AdminRoute>
             <AdminPage />
           </AdminRoute>
+        }
+      />
+      <Route
+        path="/app/users/:username"
+        element={
+          <ProtectedRoute>
+            <UserProfilePage />
+          </ProtectedRoute>
         }
       />
       {/* Cualquier otra ruta vuelve a la landing. */}

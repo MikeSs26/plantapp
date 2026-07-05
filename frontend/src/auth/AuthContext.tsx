@@ -12,7 +12,12 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    username: string,
+    displayName: string
+  ) => Promise<void>;
   logout: () => void;
   // Actualiza el usuario en memoria (tras editar el perfil).
   updateUser: (user: User) => void;
@@ -47,8 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me.data);
   };
 
-  const register = async (email: string, password: string, displayName: string) => {
-    await authApi.register(email, password, displayName);
+  const register = async (
+    email: string,
+    password: string,
+    username: string,
+    displayName: string
+  ) => {
+    await authApi.register(email, password, username, displayName);
     await login(email, password); // login automático tras registrarse
   };
 
