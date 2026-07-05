@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from .models import Comment, Like, Tree
 from .permissions import IsOwnerOrReadOnly
 from .serializers import CommentSerializer, TreeSerializer
+from .validators import validate_daily_limit, validate_proximity
 
 User = get_user_model()
 
@@ -65,8 +66,16 @@ class TreeViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        # El árbol pertenece al usuario autenticado (dueño del token).
-        serializer.save(user=self.request.user)
+        # Anti-fraud gates: daily cap + geo-temporal duplicate check.
+        user = self.request.user
+        validate_daily_limit(user)
+        validate_proximity(
+            user,
+            serializer.validated_data["latitude"],
+            serializer.validated_data["longitude"],
+        )
+        # The tree belongs to the authenticated user (token owner).
+        serializer.save(user=user)
 
     @action(detail=True, methods=["post"])
     def like(self, request, pk=None):
