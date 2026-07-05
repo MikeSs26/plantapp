@@ -63,3 +63,28 @@ export interface User {
   trees_count?: number;
   likes_received?: number;
 }
+
+// Usuario visto desde el panel de administración (incluye estado e id).
+export interface AdminUser {
+  id: number;
+  email: string;
+  display_name: string;
+  avatar_url: string;
+  location: string;
+  role: 'user' | 'admin';
+  is_active: boolean;
+  created_at: string;
+  trees_count: number;
+  likes_received: number;
+}
+
+// Métricas globales del panel de administración.
+export interface AdminStats {
+  users: number;
+  admins: number;
+  trees: number;
+  comments: number;
+  likes: number;
+  new_users_week: number;
+  new_trees_week: number;
+}

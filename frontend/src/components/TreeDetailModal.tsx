@@ -51,7 +51,10 @@ export default function TreeDetailModal({ tree, onClose, onLike, onDeleted, onCo
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const isAdmin = user?.role === 'admin';
   const isMine = tree.user === user?.id;
+  // El dueño o un admin (moderación) pueden eliminar el árbol.
+  const canDelete = isMine || isAdmin;
 
   // Cargar comentarios al abrir.
   useEffect(() => {
@@ -177,8 +180,8 @@ export default function TreeDetailModal({ tree, onClose, onLike, onDeleted, onCo
             </button>
           </div>
 
-          {/* Eliminar árbol propio (confirmación en dos pasos) */}
-          {isMine && (
+          {/* Eliminar árbol: el dueño, o un admin como moderación. */}
+          {canDelete && (
             <div className="mt-3">
               <button
                 onClick={handleDeleteTree}
@@ -190,7 +193,11 @@ export default function TreeDetailModal({ tree, onClose, onLike, onDeleted, onCo
                 }`}
               >
                 {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                {confirmDelete ? '¿Seguro? Click para confirmar' : 'Eliminar este árbol'}
+                {confirmDelete
+                  ? '¿Seguro? Click para confirmar'
+                  : isMine
+                    ? 'Eliminar este árbol'
+                    : 'Eliminar (moderación)'}
               </button>
             </div>
           )}
@@ -224,11 +231,11 @@ export default function TreeDetailModal({ tree, onClose, onLike, onDeleted, onCo
                       {c.text}
                     </p>
                   </div>
-                  {c.user === user?.id && (
+                  {(c.user === user?.id || isAdmin) && (
                     <button
                       onClick={() => handleDeleteComment(c)}
                       className="shrink-0 self-start text-slate-300 transition hover:text-red-500 dark:text-slate-600"
-                      title="Borrar comentario"
+                      title={c.user === user?.id ? 'Borrar comentario' : 'Borrar (moderación)'}
                     >
                       <Trash2 size={14} />
                     </button>

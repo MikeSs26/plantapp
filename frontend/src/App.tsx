@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import AdminRoute from './components/AdminRoute';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminPage from './pages/AdminPage';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import ProfilePage from './pages/ProfilePage';
@@ -26,6 +28,14 @@ function App() {
           <ProtectedRoute>
             <ProfilePage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/app/admin"
+        element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
         }
       />
       {/* Cualquier otra ruta vuelve a la landing. */}

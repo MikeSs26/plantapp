@@ -21,5 +21,6 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),  # /api/auth/register|login|refresh|me
+    path('api/admin/', include('users.admin_urls')),  # /api/admin/users|stats (solo rol admin)
     path('api/', include('plantapp.urls')),     # /api/trees/
 ]

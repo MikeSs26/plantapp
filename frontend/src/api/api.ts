@@ -1,6 +1,8 @@
 // frontend/src/api/api.ts
 import axios from 'axios';
 import type {
+  AdminStats,
+  AdminUser,
   Comment,
   LeaderboardEntry,
   NewTree,
@@ -184,6 +186,29 @@ export const toggleLike = async (treeId: number) => {
 export const getLeaderboard = async (): Promise<LeaderboardEntry[]> => {
   const response = await api.get<LeaderboardEntry[]>('leaderboard/');
   return response.data;
+};
+
+// --- Panel de administración (requiere rol admin en el backend) ---
+export const adminApi = {
+  getStats: async (): Promise<AdminStats> => {
+    const response = await api.get<AdminStats>('admin/stats/');
+    return response.data;
+  },
+  getUsers: async (): Promise<AdminUser[]> => {
+    // El endpoint de admin no pagina: devuelve la lista completa.
+    const response = await api.get<AdminUser[]>('admin/users/');
+    return response.data;
+  },
+  updateUser: async (
+    id: number,
+    data: Partial<Pick<AdminUser, 'role' | 'is_active'>>
+  ): Promise<AdminUser> => {
+    const response = await api.patch<AdminUser>(`admin/users/${id}/`, data);
+    return response.data;
+  },
+  deleteUser: async (id: number) => {
+    await api.delete(`admin/users/${id}/`);
+  },
 };
 
 export default api;

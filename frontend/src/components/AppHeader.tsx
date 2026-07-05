@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, Sprout, TreePine, UserRound } from 'lucide-react';
+import { LogOut, Shield, Sprout, TreePine, UserRound } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import ThemeToggle from './ThemeToggle';
 
@@ -35,8 +35,9 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 export default function AppHeader() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = user?.role === 'admin';
 
   const handleLogout = () => {
     logout();
@@ -63,6 +64,12 @@ export default function AppHeader() {
             <UserRound size={16} />
             <span className="hidden sm:inline">Perfil</span>
           </NavLink>
+          {isAdmin && (
+            <NavLink to="/app/admin" className={navLinkClass}>
+              <Shield size={16} />
+              <span className="hidden sm:inline">Admin</span>
+            </NavLink>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">

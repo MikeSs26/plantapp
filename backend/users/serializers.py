@@ -37,6 +37,43 @@ class UserSerializer(serializers.ModelSerializer):
         return Like.objects.filter(tree__user=obj).count()
 
 
+class AdminUserSerializer(serializers.ModelSerializer):
+    """Vista de usuario para el panel de administración.
+
+    Expone más campos y permite editar `role` e `is_active`. Los conteos
+    vienen anotados en el queryset del viewset (evita N+1).
+    """
+
+    trees_count = serializers.IntegerField(read_only=True)
+    likes_received = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "display_name",
+            "avatar_url",
+            "location",
+            "role",
+            "is_active",
+            "created_at",
+            "trees_count",
+            "likes_received",
+        ]
+        # Solo el rol y el estado activo son editables desde el panel.
+        read_only_fields = [
+            "id",
+            "email",
+            "display_name",
+            "avatar_url",
+            "location",
+            "created_at",
+            "trees_count",
+            "likes_received",
+        ]
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True, validators=[validate_password], style={"input_type": "password"}
