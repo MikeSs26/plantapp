@@ -18,9 +18,13 @@ from rest_framework import serializers
 from .models import Tree
 
 # --- Tunable business rules (adjust here only) ---
-DAILY_TREE_LIMIT = 20
+# Temporarily lowered from 20 while the app is in early testing.
+DAILY_TREE_LIMIT = 5
 MIN_TREE_DISTANCE_METERS = 5
 PROXIMITY_WINDOW_HOURS = 24
+# Max distance between the user's live browser geolocation (captured fresh
+# on every submission) and the tree pin they placed on the map.
+USER_RADIUS_KM = 50
 
 # One degree of latitude is ~111.32 km everywhere on Earth.
 METERS_PER_DEGREE_LAT = 111_320.0
@@ -91,3 +95,32 @@ def validate_proximity(user, latitude, longitude):
                 "Ya has registrado un árbol en esta ubicación recientemente. "
                 "Si es un árbol distinto, acércate a él y marca su posición en el mapa."
             )
+
+
+def validate_within_user_radius(reporter_lat, reporter_lng, tree_lat, tree_lng):
+    """The tree pin must be within USER_RADIUS_KM of the user's live
+    geolocation, captured fresh on every submission (never cached or stored
+    as a "home" location). This is the core anti-fraud check: it proves the
+    user is physically near where they claim to be planting, instead of
+    just dropping a pin anywhere in the world.
+    """
+    try:
+        reporter_lat, reporter_lng = float(reporter_lat), float(reporter_lng)
+    except (TypeError, ValueError):
+        raise serializers.ValidationError(
+            {
+                "reporter_latitude": (
+                    "No pudimos leer tu ubicación actual. Intenta de nuevo."
+                )
+            }
+        )
+
+    distance_km = (
+        haversine_meters(reporter_lat, reporter_lng, float(tree_lat), float(tree_lng))
+        / 1000
+    )
+    if distance_km > USER_RADIUS_KM:
+        raise serializers.ValidationError(
+            f"El árbol debe estar a menos de {USER_RADIUS_KM} km de tu ubicación actual. "
+            "Parece que estás plantando muy lejos de donde te encuentras ahora mismo."
+        )

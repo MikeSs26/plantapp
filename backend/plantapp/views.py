@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Exists, OuterRef, Q
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -11,7 +12,11 @@ from rest_framework.views import APIView
 from .models import Comment, Like, Tree
 from .permissions import IsOwnerOrReadOnly
 from .serializers import CommentSerializer, TreeSerializer
-from .validators import validate_daily_limit, validate_proximity
+from .validators import (
+    validate_daily_limit,
+    validate_proximity,
+    validate_within_user_radius,
+)
 
 User = get_user_model()
 
@@ -66,11 +71,31 @@ class TreeViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        # Anti-fraud gates: daily cap + geo-temporal duplicate check.
         user = self.request.user
+
+        # Live geolocation, required on every submission (not stored, only
+        # used to prove physical presence near the tree being registered).
+        reporter_lat = self.request.data.get("reporter_latitude")
+        reporter_lng = self.request.data.get("reporter_longitude")
+        if reporter_lat in (None, "") or reporter_lng in (None, ""):
+            raise ValidationError(
+                {
+                    "reporter_latitude": (
+                        "Debes compartir tu ubicación actual para registrar un árbol."
+                    )
+                }
+            )
+
+        # Anti-fraud gates: daily cap, geo-temporal duplicate, and user-radius check.
         validate_daily_limit(user)
         validate_proximity(
             user,
+            serializer.validated_data["latitude"],
+            serializer.validated_data["longitude"],
+        )
+        validate_within_user_radius(
+            reporter_lat,
+            reporter_lng,
             serializer.validated_data["latitude"],
             serializer.validated_data["longitude"],
         )

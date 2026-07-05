@@ -4,11 +4,9 @@ import { LocateFixed } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import { pickPin } from './mapIcons';
 import { useToast } from './ToastProvider';
+import { getCurrentPosition, type GeoCoords } from '../lib/geolocation';
 
-export interface Coords {
-  lat: number;
-  lng: number;
-}
+export type Coords = GeoCoords;
 
 interface Props {
   value: Coords | null;
@@ -42,29 +40,14 @@ export default function MapPicker({ value, onChange }: Props) {
   const [flyTarget, setFlyTarget] = useState<(Coords & { key: number }) | null>(null);
   const center: [number, number] = value ? [value.lat, value.lng] : DEFAULT_CENTER;
 
-  const locateMe = () => {
-    if (!navigator.geolocation) {
-      toast('Tu navegador no soporta geolocalización.', 'error');
-      return;
+  const locateMe = async () => {
+    try {
+      const c = await getCurrentPosition();
+      onChange(c);
+      setFlyTarget({ ...c, key: Date.now() });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'No se pudo obtener tu ubicación.', 'error');
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        onChange(c);
-        setFlyTarget({ ...c, key: Date.now() });
-      },
-      (err) => {
-        // Mensaje específico según la causa real del fallo.
-        const messages: Record<number, string> = {
-          1: 'Permiso de ubicación denegado. Actívalo para este sitio en los ajustes del navegador.',
-          2: 'No se pudo obtener tu ubicación. ¿Está el GPS encendido?',
-          3: 'La ubicación tardó demasiado. Intenta de nuevo.',
-        };
-        toast(messages[err.code] ?? 'No se pudo obtener tu ubicación.', 'error');
-      },
-      // Da más tiempo y permite usar el GPS del móvil.
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
   };
 
   return (

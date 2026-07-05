@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import axios from 'axios';
 import {
   ChevronDown,
   Globe,
@@ -28,6 +29,7 @@ import TreesMap from '../components/TreesMap';
 import { useToast } from '../components/ToastProvider';
 import { useAuth } from '../auth/AuthContext';
 import { apiError } from '../lib/format';
+import { getCurrentPosition } from '../lib/geolocation';
 import type { Stats, Tree } from '../types';
 
 type Filter = 'all' | 'mine';
@@ -166,12 +168,17 @@ export default function TreesPage() {
       toast('Elige la ubicación del árbol tocando el mapa.', 'error');
       return;
     }
+    if (!photo) {
+      toast('La foto es obligatoria: ayuda a verificar que el árbol es real.', 'error');
+      return;
+    }
     setSaving(true);
     try {
-      let photoUrl = '';
-      if (photo) {
-        photoUrl = await uploadImage(photo);
-      }
+      // Fresh location, requested on every submission (never cached/reused).
+      // The backend checks it's within 50 km of the tree pin, to prove the
+      // user is actually near where they say they're planting.
+      const reporterCoords = await getCurrentPosition();
+      const photoUrl = await uploadImage(photo);
       await createTree({
         species,
         photo_url: photoUrl,
@@ -179,6 +186,8 @@ export default function TreesPage() {
         // 10-11 dígitos. 6 decimales (~11 cm) es de sobra y encaja sin error.
         latitude: Number(coords.lat.toFixed(6)),
         longitude: Number(coords.lng.toFixed(6)),
+        reporter_latitude: Number(reporterCoords.lat.toFixed(6)),
+        reporter_longitude: Number(reporterCoords.lng.toFixed(6)),
       });
       toast('¡Árbol plantado con éxito! 🌳');
       setSpecies('');
@@ -187,7 +196,13 @@ export default function TreesPage() {
       fetchFeed(1, false);
       refreshGlobal();
     } catch (err) {
-      toast(apiError(err, 'No se pudo registrar el árbol.'), 'error');
+      // Geolocation rejections are plain Errors (not Axios), so they get
+      // their own specific message instead of the generic API fallback.
+      if (!axios.isAxiosError(err) && err instanceof Error) {
+        toast(err.message, 'error');
+      } else {
+        toast(apiError(err, 'No se pudo registrar el árbol.'), 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -283,14 +298,18 @@ export default function TreesPage() {
 
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                    Foto (opcional, máx. {MAX_PHOTO_MB} MB)
+                    Foto (obligatoria, máx. {MAX_PHOTO_MB} MB)
                   </label>
                   <input
                     type="file"
                     accept="image/*"
+                    required
                     onChange={(e) => handlePhotoPick(e.target.files?.[0] ?? null)}
                     className="text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:font-medium file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-brand-900/40 dark:file:text-brand-200"
                   />
+                  <p className="text-xs text-slate-400">
+                    Ayuda a verificar que el árbol es real, no un registro falso.
+                  </p>
                   {photo && (
                     <img
                       src={URL.createObjectURL(photo)}
@@ -312,6 +331,10 @@ export default function TreesPage() {
                     {coords
                       ? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`
                       : 'Sin ubicación seleccionada todavía.'}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Al guardar te pediremos tu ubicación actual, para verificar que estás
+                    cerca de donde plantas.
                   </p>
                 </div>
 

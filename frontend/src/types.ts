@@ -52,6 +52,10 @@ export interface NewTree {
   photo_url: string;
   latitude: number;
   longitude: number;
+  // Live geolocation captured at submit time (anti-fraud radius check).
+  // Never cached: requested fresh on every tree registration.
+  reporter_latitude: number;
+  reporter_longitude: number;
 }
 
 export interface User {
