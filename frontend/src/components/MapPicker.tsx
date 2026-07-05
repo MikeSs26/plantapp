@@ -53,7 +53,17 @@ export default function MapPicker({ value, onChange }: Props) {
         onChange(c);
         setFlyTarget({ ...c, key: Date.now() });
       },
-      () => toast('No se pudo obtener tu ubicación. Revisa los permisos.', 'error')
+      (err) => {
+        // Mensaje específico según la causa real del fallo.
+        const messages: Record<number, string> = {
+          1: 'Permiso de ubicación denegado. Actívalo para este sitio en los ajustes del navegador.',
+          2: 'No se pudo obtener tu ubicación. ¿Está el GPS encendido?',
+          3: 'La ubicación tardó demasiado. Intenta de nuevo.',
+        };
+        toast(messages[err.code] ?? 'No se pudo obtener tu ubicación.', 'error');
+      },
+      // Da más tiempo y permite usar el GPS del móvil.
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 

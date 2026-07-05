@@ -138,6 +138,17 @@ class UploadView(APIView):
                 file,
                 folder="plantapp/trees",
                 resource_type="image",
+                # Normaliza cualquier formato (HEIC del celular, PNG, etc.) a JPG,
+                # que todos los navegadores muestran. Además reduce fotos enormes.
+                format="jpg",
+                transformation=[
+                    {
+                        "width": 1600,
+                        "height": 1600,
+                        "crop": "limit",
+                        "quality": "auto:good",
+                    }
+                ],
             )
         except Exception:  # noqa: BLE001
             return Response(
