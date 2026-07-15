@@ -16,7 +16,7 @@ import type {
 } from '../types';
 
 // En producción se define VITE_API_URL en el .env del frontend.
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api/';
+export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api/';
 const ACCESS_KEY = 'plantapp_access';
 const REFRESH_KEY = 'plantapp_refresh';
 
