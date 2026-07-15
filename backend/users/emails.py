@@ -5,6 +5,10 @@ no extra DB table) with email_verified mixed into the hash so a link stops
 working the moment the account is verified — a used link can't be replayed.
 """
 
+import json
+import urllib.request
+from email.utils import parseaddr
+
 from django.conf import settings
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import EmailMultiAlternatives
@@ -67,6 +71,12 @@ def send_verification_email(user):
   </p>
 </div>"""
 
+    # Prefer Brevo's HTTPS API when configured: many hosts (Render included)
+    # filter outbound SMTP, so port-443 delivery is the reliable path.
+    if settings.BREVO_API_KEY:
+        _send_via_brevo(user.email, name, subject, html_body, text_body)
+        return
+
     message = EmailMultiAlternatives(
         subject=subject,
         body=text_body,
@@ -77,3 +87,33 @@ def send_verification_email(user):
     # fail_silently=False so registration surfaces a real error if SMTP is
     # misconfigured, instead of silently telling the user to check their inbox.
     message.send(fail_silently=False)
+
+
+def _send_via_brevo(to_email, to_name, subject, html_body, text_body):
+    """Send a transactional email through Brevo's HTTP API (port 443).
+
+    Raises on any non-success so the caller can roll back the signup.
+    """
+    from_name, from_email = parseaddr(settings.DEFAULT_FROM_EMAIL)
+    payload = {
+        "sender": {"name": from_name or "PlantApp", "email": from_email},
+        "to": [{"email": to_email, "name": to_name}],
+        "subject": subject,
+        "htmlContent": html_body,
+        "textContent": text_body,
+    }
+    request = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "api-key": settings.BREVO_API_KEY,
+            "content-type": "application/json",
+            "accept": "application/json",
+        },
+        method="POST",
+    )
+    # urlopen raises HTTPError on 4xx/5xx (e.g. unverified sender), which
+    # propagates up and triggers the signup rollback in the view.
+    with urllib.request.urlopen(request, timeout=15) as response:
+        if response.status not in (200, 201):
+            raise RuntimeError(f"Brevo API returned status {response.status}")

@@ -52,9 +52,8 @@ git push
    | `CLOUDINARY_CLOUD_NAME` | el de tu `.env` local |
    | `CLOUDINARY_API_KEY` | el de tu `.env` local |
    | `CLOUDINARY_API_SECRET` | el de tu `.env` local (idealmente el rotado) |
-   | `EMAIL_HOST_USER` | tu dirección de Gmail (para verificación de correo) |
-   | `EMAIL_HOST_PASSWORD` | tu **App Password** de Google (16 caracteres, NO tu contraseña normal) |
-   | `DEFAULT_FROM_EMAIL` | `PlantApp <tucorreo@gmail.com>` |
+   | `BREVO_API_KEY` | tu API key de Brevo (envío de correos por HTTPS) |
+   | `DEFAULT_FROM_EMAIL` | `PlantApp <tucorreo@gmail.com>` (remitente verificado en Brevo) |
    | `FRONTEND_URL` | `https://tu-app.vercel.app` (para armar el enlace de verificación) |
    | `PYTHON_VERSION` | `3.13.4` |
 
@@ -63,11 +62,17 @@ git push
    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
    ```
 
-   **Gmail App Password** (para `EMAIL_HOST_PASSWORD`): activa la verificación en
-   2 pasos en tu cuenta de Google → <https://myaccount.google.com/apppasswords>
-   → crea una contraseña de aplicación → usa esos 16 caracteres (sin espacios).
-   Sin `EMAIL_HOST_USER` configurado, los correos se imprimen en los logs en vez
-   de enviarse, y los usuarios nuevos no podrán verificar su cuenta ni entrar.
+   **Correo con Brevo** (recomendado — Render bloquea SMTP saliente):
+   1. Crea una cuenta gratis en <https://www.brevo.com> (300 correos/día).
+   2. Verifica tu correo remitente: **Senders, Domains & Dedicated IPs → Senders**
+      → agrega el correo que usarás en `DEFAULT_FROM_EMAIL` y confirma el enlace
+      que te llega.
+   3. Crea una API key: **SMTP & API → API Keys → Generate a new API key** →
+      úsala como `BREVO_API_KEY` en Render.
+
+   Si `BREVO_API_KEY` está vacío, el backend intenta SMTP (`EMAIL_HOST_USER` /
+   `EMAIL_HOST_PASSWORD`), que suele estar bloqueado en Render. Sin ninguno de
+   los dos, los correos se imprimen en los logs (útil solo en desarrollo local).
 
 5. Deploy. Cuando termine, prueba: `https://plantapp-XXXX.onrender.com/api/stats/` → debe responder JSON.
 

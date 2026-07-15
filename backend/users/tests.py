@@ -4,8 +4,11 @@ Django's test runner swaps in the locmem email backend automatically, so
 mail.outbox captures anything the code tries to send.
 """
 
+from unittest.mock import MagicMock, patch
+
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.test import override_settings
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework.test import APITestCase
@@ -110,3 +113,17 @@ class EmailVerificationTests(APITestCase):
         res = self.register(email="DUP@test.com", username="duptwo")
         self.assertEqual(res.status_code, 400)
         self.assertIn("correo", str(res.data).lower())
+
+    @override_settings(
+        BREVO_API_KEY="test-key", DEFAULT_FROM_EMAIL="PlantApp <sender@x.com>"
+    )
+    def test_register_uses_brevo_http_api_when_configured(self):
+        with patch("users.emails.urllib.request.urlopen") as urlopen:
+            resp = MagicMock()
+            resp.status = 201
+            urlopen.return_value.__enter__.return_value = resp
+            res = self.register()
+        self.assertEqual(res.status_code, 201)
+        self.assertTrue(urlopen.called)
+        # Brevo path used → nothing went through the Django SMTP/locmem backend.
+        self.assertEqual(len(mail.outbox), 0)
