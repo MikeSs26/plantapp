@@ -200,7 +200,13 @@ REST_FRAMEWORK = {
 # credentials are set, so the verification link prints to the runserver log.
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = True
+# Port 465 uses implicit SSL; 587 uses STARTTLS. Deriving this from the port
+# means switching (e.g. if the host filters one port) is a single env change.
+EMAIL_USE_SSL = EMAIL_PORT == 465
+EMAIL_USE_TLS = not EMAIL_USE_SSL
+# Fail fast instead of hanging until gunicorn kills the worker (~30s → 500 and
+# a half-created account). If SMTP is blocked, the user gets a clean error.
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv(
