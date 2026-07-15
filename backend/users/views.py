@@ -174,6 +174,17 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 
+class AdminDiagnosticsView(APIView):
+    """Runs the in-app QA suite (functional + non-functional) for admins."""
+
+    permission_classes = [IsAdminRole]
+
+    def get(self, request):
+        from plantapp.diagnostics import run_all_checks
+
+        return Response(run_all_checks(request.user))
+
+
 class AdminStatsView(APIView):
     """Métricas globales para el panel de administración (solo admins)."""
 

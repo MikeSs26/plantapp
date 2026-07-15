@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowDownCircle,
+  FlaskConical,
   Heart,
   Leaf,
   Loader2,
@@ -158,11 +160,19 @@ export default function AdminPage() {
       <AppHeader />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
-        <div className="flex items-center gap-2">
-          <Shield className="text-brand-600 dark:text-brand-400" size={24} />
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Panel de administración
-          </h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Shield className="text-brand-600 dark:text-brand-400" size={24} />
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Panel de administración
+            </h1>
+          </div>
+          <Link
+            to="/app/admin/tests"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-brand-700 ring-1 ring-brand-200 transition hover:bg-brand-50 dark:text-brand-300 dark:ring-brand-800 dark:hover:bg-brand-900/20"
+          >
+            <FlaskConical size={15} /> Pruebas de QA
+          </Link>
         </div>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Métricas de la plataforma y gestión de la comunidad.

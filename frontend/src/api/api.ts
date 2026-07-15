@@ -4,6 +4,7 @@ import type {
   AdminStats,
   AdminUser,
   Comment,
+  DiagnosticsReport,
   LeaderboardEntry,
   NewTree,
   Paginated,
@@ -223,6 +224,10 @@ export const adminApi = {
   },
   deleteUser: async (id: number) => {
     await api.delete(`admin/users/${id}/`);
+  },
+  runTests: async (): Promise<DiagnosticsReport> => {
+    const response = await api.get<DiagnosticsReport>('admin/run-tests/');
+    return response.data;
   },
 };
 

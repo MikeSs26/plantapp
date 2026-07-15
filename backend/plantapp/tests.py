@@ -140,3 +140,40 @@ class TreeAntiFraudTests(APITestCase):
             "4.65000000", "-74.08000000", reporter_lat="4.60000000", reporter_lng="-74.08000000"
         )
         self.assertEqual(res.status_code, 201)
+
+
+class AdminDiagnosticsTests(APITestCase):
+    """Tests for the in-app QA panel endpoint (/api/admin/run-tests/)."""
+
+    RUN = "/api/admin/run-tests/"
+
+    def test_suite_reports_2_functional_and_2_plus_non_functional(self):
+        from .diagnostics import run_all_checks
+
+        admin = User.objects.create_user(
+            email="qa@test.com", password="Reforestar2026!", username="qa", role="admin"
+        )
+        report = run_all_checks(admin)
+        functional = [r for r in report["results"] if r["category"] == "functional"]
+        non_functional = [r for r in report["results"] if r["category"] == "non_functional"]
+        self.assertGreaterEqual(len(functional), 2)
+        self.assertGreaterEqual(len(non_functional), 2)
+        # A healthy system passes its own suite.
+        self.assertEqual(report["summary"]["failed"], 0)
+
+    def test_endpoint_forbidden_for_non_admin(self):
+        user = User.objects.create_user(
+            email="plain@test.com", password="Reforestar2026!", username="plain"
+        )
+        self.client.force_authenticate(user)
+        self.assertEqual(self.client.get(self.RUN).status_code, 403)
+
+    def test_endpoint_returns_report_for_admin(self):
+        admin = User.objects.create_user(
+            email="qa2@test.com", password="Reforestar2026!", username="qa2", role="admin"
+        )
+        self.client.force_authenticate(admin)
+        res = self.client.get(self.RUN)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("results", res.data)
+        self.assertIn("summary", res.data)

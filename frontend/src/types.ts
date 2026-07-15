@@ -102,6 +102,24 @@ export interface AdminUser {
   likes_received: number;
 }
 
+// One QA check result from the admin testing panel.
+export interface DiagnosticResult {
+  name: string;
+  category: 'functional' | 'non_functional';
+  subtype: string;
+  expected: string;
+  actual: string;
+  passed: boolean;
+  duration_ms: number;
+}
+
+export interface DiagnosticsReport {
+  ran_at: string;
+  summary: { total: number; passed: number; failed: number };
+  results: DiagnosticResult[];
+  config: { user_radius_km: number; daily_tree_limit: number };
+}
+
 // Métricas globales del panel de administración.
 export interface AdminStats {
   users: number;
