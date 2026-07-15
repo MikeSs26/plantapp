@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react';
+import { AxiosError } from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { authApi } from '../api/api';
 import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login() {
@@ -10,18 +13,45 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // When the backend reports the account isn't verified, offer a resend action.
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
+  const [resending, setResending] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setResendMsg('');
+    setNeedsVerification(false);
     setBusy(true);
     try {
       await login(email, password);
       navigate('/app');
-    } catch {
-      setError('Email o contraseña incorrectos.');
+    } catch (err) {
+      const data = (err as AxiosError).response?.data as
+        | { code?: string[]; detail?: string[] }
+        | undefined;
+      if (data?.code?.includes('email_not_verified')) {
+        setNeedsVerification(true);
+        setError(data.detail?.[0] ?? 'Tu correo aún no está verificado.');
+      } else {
+        setError('Email o contraseña incorrectos.');
+      }
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    setResendMsg('');
+    try {
+      const res = await authApi.resendVerification(email);
+      setResendMsg(res.data.detail);
+    } catch {
+      setResendMsg('No se pudo reenviar el correo. Intenta más tarde.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -63,6 +93,25 @@ export default function Login() {
             required
           />
           {error && <p className="text-sm text-red-500">{error}</p>}
+
+          {needsVerification && (
+            <div className="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
+              {resendMsg ? (
+                <p className="text-xs text-amber-700 dark:text-amber-300">{resendMsg}</p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-amber-700 hover:underline disabled:opacity-60 dark:text-amber-300"
+                >
+                  {resending && <Loader2 size={14} className="animate-spin" />}
+                  Reenviar correo de verificación
+                </button>
+              )}
+            </div>
+          )}
+
           <button
             className="rounded-lg bg-brand-600 py-2.5 font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-60"
             type="submit"

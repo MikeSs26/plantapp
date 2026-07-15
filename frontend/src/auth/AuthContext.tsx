@@ -58,8 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: string,
     displayName: string
   ) => {
+    // No auto-login: the account is unverified until the user clicks the
+    // link we email them. The Register page shows a "check your inbox" screen.
     await authApi.register(email, password, username, displayName);
-    await login(email, password); // login automático tras registrarse
   };
 
   const logout = () => {

@@ -2,19 +2,23 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import generics, permissions, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from django.shortcuts import get_object_or_404
-
+from .emails import email_verification_token, send_verification_email
 from .permissions import IsAdminRole
 from .serializers import (
     AdminUserSerializer,
+    EmailVerifiedTokenObtainPairSerializer,
     PublicUserSerializer,
     RegisterSerializer,
+    ResendVerificationSerializer,
     UserSerializer,
 )
 
@@ -22,11 +26,86 @@ User = get_user_model()
 
 
 class RegisterView(generics.CreateAPIView):
-    """Registro público de nuevos reforestadores."""
+    """Public signup. Creates an unverified account and emails a link."""
 
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_scope = "register"
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        try:
+            send_verification_email(user)
+        except Exception:  # noqa: BLE001
+            # Don't leave an orphan account if the email can't go out (bad
+            # address or SMTP misconfig): roll it back so the user can retry.
+            user.delete()
+            raise ValidationError(
+                "No pudimos enviar el correo de verificación. Revisa que tu "
+                "dirección sea correcta e inténtalo de nuevo."
+            )
+
+
+class EmailVerifiedLoginView(TokenObtainPairView):
+    """Login that rejects accounts whose email hasn't been verified yet."""
+
+    serializer_class = EmailVerifiedTokenObtainPairSerializer
+
+
+class VerifyEmailView(APIView):
+    """Confirm an email from the link's uid + token."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        uidb64 = request.data.get("uid")
+        token = request.data.get("token")
+        if not uidb64 or not token:
+            raise ValidationError("Enlace de verificación inválido.")
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+        except (User.DoesNotExist, ValueError, TypeError, OverflowError):
+            raise ValidationError("Enlace de verificación inválido.")
+
+        # Idempotent: a second click on an already-used link is a friendly no-op.
+        if user.email_verified:
+            return Response(
+                {"detail": "Tu correo ya estaba verificado. ¡Puedes iniciar sesión!"}
+            )
+        if not email_verification_token.check_token(user, token):
+            raise ValidationError(
+                "El enlace de verificación expiró o no es válido. Solicita uno nuevo."
+            )
+        user.email_verified = True
+        user.save(update_fields=["email_verified"])
+        return Response({"detail": "¡Correo verificado! Ya puedes iniciar sesión."})
+
+
+class ResendVerificationView(APIView):
+    """Re-send the verification email for an unverified account."""
+
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = "resend_email"
+
+    def post(self, request):
+        serializer = ResendVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        user = User.objects.filter(email__iexact=email, email_verified=False).first()
+        if user:
+            try:
+                send_verification_email(user)
+            except Exception:  # noqa: BLE001
+                pass  # never reveal existence or SMTP state to the caller
+        # Always the same generic response (avoid account enumeration).
+        return Response(
+            {
+                "detail": "Si esa cuenta existe y aún no está verificada, "
+                "te enviamos un nuevo enlace de verificación."
+            }
+        )
 
 
 class MeView(generics.RetrieveUpdateAPIView):

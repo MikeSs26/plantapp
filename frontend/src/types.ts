@@ -67,6 +67,7 @@ export interface User {
   avatar_url: string;
   location: string;
   role: 'user' | 'admin';
+  email_verified: boolean;
   created_at: string;
   trees_count?: number;
   likes_received?: number;

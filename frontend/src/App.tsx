@@ -8,6 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import Register from './pages/Register';
 import TreesPage from './pages/TreesPage';
 import UserProfilePage from './pages/UserProfilePage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route
         path="/app"
         element={

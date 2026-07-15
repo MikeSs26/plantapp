@@ -39,6 +39,11 @@ class User(AbstractUser):
         max_length=20, choices=Role.choices, default=Role.USER
     )
 
+    # Set to True once the user clicks the verification link emailed at
+    # signup. Login is blocked until then (see EmailVerifiedTokenSerializer).
+    # Distinct from is_active, which admins use to ban/unban accounts.
+    email_verified = models.BooleanField("correo verificado", default=False)
+
     # --- Campos de perfil personalizable ---
     display_name = models.CharField("nombre público", max_length=100, blank=True)
     bio = models.TextField("biografía", blank=True)

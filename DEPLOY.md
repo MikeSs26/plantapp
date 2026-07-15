@@ -52,12 +52,22 @@ git push
    | `CLOUDINARY_CLOUD_NAME` | el de tu `.env` local |
    | `CLOUDINARY_API_KEY` | el de tu `.env` local |
    | `CLOUDINARY_API_SECRET` | el de tu `.env` local (idealmente el rotado) |
+   | `EMAIL_HOST_USER` | tu dirección de Gmail (para verificación de correo) |
+   | `EMAIL_HOST_PASSWORD` | tu **App Password** de Google (16 caracteres, NO tu contraseña normal) |
+   | `DEFAULT_FROM_EMAIL` | `PlantApp <tucorreo@gmail.com>` |
+   | `FRONTEND_URL` | `https://tu-app.vercel.app` (para armar el enlace de verificación) |
    | `PYTHON_VERSION` | `3.13.4` |
 
    Generar SECRET_KEY nueva:
    ```powershell
    python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
    ```
+
+   **Gmail App Password** (para `EMAIL_HOST_PASSWORD`): activa la verificación en
+   2 pasos en tu cuenta de Google → <https://myaccount.google.com/apppasswords>
+   → crea una contraseña de aplicación → usa esos 16 caracteres (sin espacios).
+   Sin `EMAIL_HOST_USER` configurado, los correos se imprimen en los logs en vez
+   de enviarse, y los usuarios nuevos no podrán verificar su cuenta ni entrar.
 
 5. Deploy. Cuando termine, prueba: `https://plantapp-XXXX.onrender.com/api/stats/` → debe responder JSON.
 

@@ -97,11 +97,17 @@ api.interceptors.response.use(
 
 // --- Endpoints de autenticación ---
 export const authApi = {
+  // Registration no longer returns tokens: the account is created unverified
+  // and a verification email is sent. The user must verify before logging in.
   register: (email: string, password: string, username: string, display_name: string) =>
     api.post<User>('auth/register/', { email, password, username, display_name }),
   login: (email: string, password: string) =>
     api.post<{ access: string; refresh: string }>('auth/login/', { email, password }),
   me: () => api.get<User>('auth/me/'),
+  verifyEmail: (uid: string, token: string) =>
+    api.post<{ detail: string }>('auth/verify-email/', { uid, token }),
+  resendVerification: (email: string) =>
+    api.post<{ detail: string }>('auth/resend-verification/', { email }),
 };
 
 // Actualiza el perfil del usuario autenticado.

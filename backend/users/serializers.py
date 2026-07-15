@@ -3,6 +3,7 @@ import re
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
 
@@ -44,11 +45,12 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar_url",
             "location",
             "role",
+            "email_verified",
             "created_at",
             "trees_count",
             "likes_received",
         ]
-        read_only_fields = ["id", "email", "role", "created_at"]
+        read_only_fields = ["id", "email", "role", "email_verified", "created_at"]
 
     def validate_username(self, value):
         # Exclude the current user so they can keep (or re-save) their own handle.
@@ -135,8 +137,43 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "email", "password", "username", "display_name"]
 
+    def validate_email(self, value):
+        # Case-insensitive: prevents Maria@x.com / maria@x.com duplicates.
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Ya existe una cuenta con este correo.")
+        return value
+
     def validate_username(self, value):
         return validate_username_value(value)
 
     def create(self, validated_data):
+        # New accounts start unverified; the view sends the verification email.
         return User.objects.create_user(**validated_data)
+
+
+class EmailVerifiedTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Login serializer that blocks accounts whose email isn't verified.
+
+    super().validate() authenticates (password + is_active); we then gate on
+    email_verified and return a machine-readable code so the frontend can
+    offer a "resend verification" action.
+    """
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        if not self.user.email_verified:
+            raise serializers.ValidationError(
+                {
+                    "code": "email_not_verified",
+                    "detail": (
+                        "Tu correo aún no está verificado. Revisa tu bandeja de "
+                        "entrada (y spam) o solicita un nuevo enlace."
+                    ),
+                }
+            )
+        return data
+
+
+class ResendVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
