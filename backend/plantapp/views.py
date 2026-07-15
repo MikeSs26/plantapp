@@ -1,3 +1,5 @@
+import time
+
 import cloudinary.uploader
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Exists, OuterRef, Q
@@ -111,6 +113,29 @@ class TreeViewSet(viewsets.ModelViewSet):
             like.delete()
         return Response(
             {"liked": created, "likes_count": tree.likes.count()}
+        )
+
+    @action(detail=False, methods=["get"])
+    def weather(self, request):
+        """Live weather at each of the user's tree locations, fetched
+        concurrently (see plantapp/weather.py). Returns the wall-clock time so
+        the frontend can show that N lookups ran in parallel, not in series."""
+        from .weather import fetch_weather_for_trees
+
+        trees = list(
+            Tree.objects.filter(user=request.user)
+            .order_by("-planted_at")
+            .values("id", "species", "latitude", "longitude")[:20]
+        )
+        start = time.perf_counter()
+        results = fetch_weather_for_trees(trees)
+        elapsed_ms = round((time.perf_counter() - start) * 1000)
+        return Response(
+            {
+                "count": len(results),
+                "elapsed_ms": elapsed_ms,
+                "results": results,
+            }
         )
 
     @action(detail=False)

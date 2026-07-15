@@ -12,6 +12,7 @@ import type {
   Stats,
   Tree,
   User,
+  WeatherReport,
 } from '../types';
 
 // En producción se define VITE_API_URL en el .env del frontend.
@@ -148,6 +149,13 @@ export const getTrees = async (query: TreeQuery = {}): Promise<Paginated<Tree>> 
 // Todos los árboles (datos mínimos, sin paginar) para el mapa.
 export const getTreeLocations = async (): Promise<Tree[]> => {
   const response = await api.get<Tree[]>('trees/locations/');
+  return response.data;
+};
+
+// Live weather at each of the user's tree locations (fetched concurrently
+// on the backend via asyncio.gather).
+export const getMyTreesWeather = async (): Promise<WeatherReport> => {
+  const response = await api.get<WeatherReport>('trees/weather/');
   return response.data;
 };
 

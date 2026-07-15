@@ -2,17 +2,22 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import axios from 'axios';
 import {
   ChevronDown,
+  CloudSun,
+  Droplets,
   Globe,
   Heart,
   Loader2,
   MapPin,
   Search,
   Sprout,
+  Thermometer,
   TreePine,
+  Zap,
 } from 'lucide-react';
 import {
   authApi,
   createTree,
+  getMyTreesWeather,
   getStats,
   getTreeLocations,
   getTrees,
@@ -30,7 +35,7 @@ import { useToast } from '../components/ToastProvider';
 import { useAuth } from '../auth/AuthContext';
 import { apiError } from '../lib/format';
 import { getCurrentPosition } from '../lib/geolocation';
-import type { Stats, Tree } from '../types';
+import type { Stats, Tree, WeatherReport } from '../types';
 
 type Filter = 'all' | 'mine';
 type Sort = 'recent' | 'liked';
@@ -77,6 +82,22 @@ export default function TreesPage() {
   const [mapTrees, setMapTrees] = useState<Tree[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // Clima en vivo de los árboles del usuario (fetch asíncrono concurrente).
+  const [weather, setWeather] = useState<WeatherReport | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+
+  const loadWeather = useCallback(() => {
+    setWeatherLoading(true);
+    getMyTreesWeather()
+      .then(setWeather)
+      .catch(() => setWeather(null))
+      .finally(() => setWeatherLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadWeather();
+  }, [loadWeather]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 400);
@@ -152,6 +173,7 @@ export default function TreesPage() {
     setMapTrees((prev) => prev.filter((t) => t.id !== tree.id));
     setFeedCount((c) => Math.max(0, c - 1));
     refreshGlobal();
+    loadWeather();
   };
 
   const handlePhotoPick = (file: File | null) => {
@@ -195,6 +217,7 @@ export default function TreesPage() {
       setPhoto(null);
       fetchFeed(1, false);
       refreshGlobal();
+      loadWeather();
     } catch (err) {
       // Geolocation rejections are plain Errors (not Axios), so they get
       // their own specific message instead of the generic API fallback.
@@ -272,6 +295,60 @@ export default function TreesPage() {
             </div>
           ))}
         </div>
+
+        {/* Clima en vivo de tus árboles (fetch asíncrono concurrente) */}
+        {(weatherLoading || (weather && weather.count > 0)) && (
+          <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 dark:bg-slate-800 dark:ring-slate-700">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                <CloudSun size={20} className="text-sky-500" /> Clima de tus árboles
+              </h2>
+              {weather && (
+                <span
+                  className="flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
+                  title="Todas las ubicaciones se consultaron en paralelo, no una por una"
+                >
+                  <Zap size={11} /> {weather.count} ubicaciones en paralelo · {weather.elapsed_ms} ms
+                </span>
+              )}
+            </div>
+
+            {weatherLoading ? (
+              <p className="mt-4 flex items-center gap-2 text-sm text-slate-400">
+                <Loader2 size={15} className="animate-spin" /> Consultando el clima…
+              </p>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {weather?.results.map((w) => (
+                  <div
+                    key={w.tree_id}
+                    className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-700/40"
+                  >
+                    <span className="text-3xl">{w.ok ? w.emoji : '❓'}</span>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-slate-900 dark:text-white">
+                        {w.species}
+                      </p>
+                      {w.ok ? (
+                        <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <span className="flex items-center gap-0.5">
+                            <Thermometer size={12} /> {w.temperature}°C
+                          </span>
+                          <span className="flex items-center gap-0.5">
+                            <Droplets size={12} /> {w.humidity}%
+                          </span>
+                          <span className="truncate">{w.condition}</span>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-400">Clima no disponible</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         <div className="mt-8 grid gap-8 lg:grid-cols-3">
           <div className="space-y-8 lg:col-span-2">

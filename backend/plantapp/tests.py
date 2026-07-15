@@ -5,6 +5,8 @@ latitude ~= 111.32 km, so 0.00002 deg ~= 2.2 m, 0.0001 deg ~= 11 m, and
 0.05 deg ~= 5.6 km.
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
@@ -177,3 +179,58 @@ class AdminDiagnosticsTests(APITestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn("results", res.data)
         self.assertIn("summary", res.data)
+
+
+class WeatherAsyncTests(APITestCase):
+    """Tests for the concurrent async weather feature (plantapp/weather.py)."""
+
+    def _fake_response(self):
+        resp = MagicMock()
+        resp.raise_for_status = MagicMock()
+        resp.json = MagicMock(
+            return_value={
+                "current": {
+                    "temperature_2m": 20.0,
+                    "relative_humidity_2m": 60,
+                    "precipitation": 0.0,
+                    "weather_code": 0,
+                }
+            }
+        )
+        return resp
+
+    def test_fetch_weather_gathers_a_result_per_tree(self):
+        from plantapp import weather
+
+        client = MagicMock()
+        client.__aenter__ = AsyncMock(return_value=client)
+        client.__aexit__ = AsyncMock(return_value=False)
+        client.get = AsyncMock(return_value=self._fake_response())
+
+        trees = [
+            {"id": 1, "species": "Roble", "latitude": "4.6", "longitude": "-74.0"},
+            {"id": 2, "species": "Pino", "latitude": "5.0", "longitude": "-73.0"},
+        ]
+        with patch.object(weather.httpx, "AsyncClient", return_value=client):
+            results = weather.fetch_weather_for_trees(trees)
+
+        self.assertEqual(len(results), 2)
+        self.assertTrue(all(r["ok"] for r in results))
+        self.assertEqual(results[0]["temperature"], 20.0)
+        self.assertEqual(results[0]["condition"], "Despejado")
+        # One concurrent request per tree.
+        self.assertEqual(client.get.await_count, 2)
+
+    def test_fetch_weather_empty_makes_no_requests(self):
+        from plantapp import weather
+
+        self.assertEqual(weather.fetch_weather_for_trees([]), [])
+
+    def test_weather_endpoint_empty_for_user_without_trees(self):
+        user = User.objects.create_user(
+            email="noweather@test.com", password="Reforestar2026!", username="noweather"
+        )
+        self.client.force_authenticate(user)
+        res = self.client.get("/api/trees/weather/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["count"], 0)

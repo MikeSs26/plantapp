@@ -46,6 +46,24 @@ export interface Stats {
   species: number;
 }
 
+// Live weather at one tree's location (from the concurrent async fetch).
+export interface WeatherResult {
+  tree_id: number;
+  species: string;
+  ok: boolean;
+  temperature?: number;
+  humidity?: number;
+  precipitation?: number;
+  condition?: string;
+  emoji?: string;
+}
+
+export interface WeatherReport {
+  count: number;
+  elapsed_ms: number; // wall-clock time for all lookups fetched in parallel
+  results: WeatherResult[];
+}
+
 // Datos que el frontend envía al crear un árbol (el dueño lo pone el backend).
 export interface NewTree {
   species: string;
