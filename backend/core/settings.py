@@ -26,7 +26,10 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # En producción: DEBUG=False en el .env del servidor.
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
+# Secure by default: DEBUG is OFF unless explicitly enabled. An insecure
+# default of True here would mean a deployment that forgets to set DEBUG=False
+# silently leaks stack traces/settings in production (OWASP A05).
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = [
     h.strip()

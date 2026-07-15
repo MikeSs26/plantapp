@@ -102,8 +102,11 @@ class ResendVerificationView(APIView):
         if user:
             try:
                 send_verification_email(user)
-            except Exception:  # noqa: BLE001
-                pass  # never reveal existence or SMTP state to the caller
+            except Exception:  # noqa: BLE001  # nosec B110
+                # Deliberate silent swallow: the response must be identical
+                # whether the email exists, is verified, or sending failed —
+                # any difference would let an attacker enumerate accounts.
+                pass
         # Always the same generic response (avoid account enumeration).
         return Response(
             {

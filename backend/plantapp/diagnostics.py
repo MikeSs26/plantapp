@@ -69,7 +69,7 @@ def check_duplicate_email(existing_email):
     serializer = RegisterSerializer(
         data={
             "email": existing_email,
-            "password": "Zx9!kLmn2026",
+            "password": "Zx9!kLmn2026",  # nosec B105: throwaway probe value, not a real credential
             "username": "qa_probe_zz",
             "display_name": "QA Probe",
         }

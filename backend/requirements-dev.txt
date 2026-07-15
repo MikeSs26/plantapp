@@ -1,0 +1,5 @@
+# Dev/QA-only tools. NOT installed on Render (its Build Command uses
+# requirements.txt only) -- keeps the production image lean.
+pytest==9.1.1
+pytest-django==4.12.0
+bandit==1.9.4

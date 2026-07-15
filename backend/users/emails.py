@@ -114,6 +114,9 @@ def _send_via_brevo(to_email, to_name, subject, html_body, text_body):
     )
     # urlopen raises HTTPError on 4xx/5xx (e.g. unverified sender), which
     # propagates up and triggers the signup rollback in the view.
-    with urllib.request.urlopen(request, timeout=15) as response:
+    # nosec B310: Bandit flags urlopen for scheme-injection (file://, etc.),
+    # but the URL above is a hardcoded https:// literal, never user input,
+    # so there's nothing to inject.
+    with urllib.request.urlopen(request, timeout=15) as response:  # nosec B310
         if response.status not in (200, 201):
             raise RuntimeError(f"Brevo API returned status {response.status}")
