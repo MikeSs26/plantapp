@@ -213,6 +213,13 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 # (bypasses hosts that filter outbound SMTP, like Render). The sender address
 # is taken from DEFAULT_FROM_EMAIL and must be a Brevo-verified sender.
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+
+# Master switch for the signup email-verification gate. Off for now (reliable
+# email delivery from the host isn't in place yet): accounts are auto-verified
+# on signup and login isn't gated. Flip to "True" once email works again.
+REQUIRE_EMAIL_VERIFICATION = (
+    os.getenv("REQUIRE_EMAIL_VERIFICATION", "False").lower() == "true"
+)
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "PlantApp <no-reply@plantapp.local>"
 )

@@ -58,9 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: string,
     displayName: string
   ) => {
-    // No auto-login: the account is unverified until the user clicks the
-    // link we email them. The Register page shows a "check your inbox" screen.
+    // Email verification is currently disabled (REQUIRE_EMAIL_VERIFICATION off
+    // on the backend), so accounts are active immediately: log in right away.
     await authApi.register(email, password, username, displayName);
+    await login(email, password);
   };
 
   const logout = () => {

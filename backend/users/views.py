@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -34,6 +35,10 @@ class RegisterView(generics.CreateAPIView):
     throttle_scope = "register"
 
     def perform_create(self, serializer):
+        # Email gate disabled: activate the account immediately, no email sent.
+        if not settings.REQUIRE_EMAIL_VERIFICATION:
+            serializer.save(email_verified=True)
+            return
         user = serializer.save()
         try:
             send_verification_email(user)

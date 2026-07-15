@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -161,7 +162,7 @@ class EmailVerifiedTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-        if not self.user.email_verified:
+        if settings.REQUIRE_EMAIL_VERIFICATION and not self.user.email_verified:
             raise serializers.ValidationError(
                 {
                     "code": "email_not_verified",

@@ -18,6 +18,7 @@ from .emails import email_verification_token
 User = get_user_model()
 
 
+@override_settings(REQUIRE_EMAIL_VERIFICATION=True)
 class EmailVerificationTests(APITestCase):
     REGISTER = "/api/auth/register/"
     LOGIN = "/api/auth/login/"
@@ -127,3 +128,29 @@ class EmailVerificationTests(APITestCase):
         self.assertTrue(urlopen.called)
         # Brevo path used → nothing went through the Django SMTP/locmem backend.
         self.assertEqual(len(mail.outbox), 0)
+
+
+@override_settings(REQUIRE_EMAIL_VERIFICATION=False)
+class EmailVerificationDisabledTests(APITestCase):
+    """With the gate off, signup auto-verifies and login works immediately."""
+
+    def test_signup_auto_verifies_and_login_works_without_email(self):
+        res = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "instant@test.com",
+                "password": "Reforestar2026!",
+                "username": "instant",
+                "display_name": "Instant",
+            },
+        )
+        self.assertEqual(res.status_code, 201)
+        user = User.objects.get(email="instant@test.com")
+        self.assertTrue(user.email_verified)
+        self.assertEqual(len(mail.outbox), 0)  # no email attempted
+
+        login = self.client.post(
+            "/api/auth/login/", {"email": "instant@test.com", "password": "Reforestar2026!"}
+        )
+        self.assertEqual(login.status_code, 200)
+        self.assertIn("access", login.data)
