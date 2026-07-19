@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, Globe, Heart, Leaf, MapPin, TreePine, Trophy, Users } from 'lucide-react';
+import { Camera, Globe, Heart, Leaf, MapPin, Sprout, TreePine, Trophy, Users } from 'lucide-react';
 import { getStats } from '../api/api';
 import { useAuth } from '../auth/AuthContext';
 import ThemeToggle from '../components/ThemeToggle';
-import hero from '../assets/hero.png';
 import type { Stats } from '../types';
 
 // Número que cuenta de 0 al valor real al montarse (da vida a la landing).
@@ -55,6 +54,8 @@ const features = [
 export default function Landing() {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
+  const orbRef = useRef<HTMLDivElement>(null);
+  const ORB = 288; 
 
   useEffect(() => {
     getStats()
@@ -62,13 +63,47 @@ export default function Landing() {
       .catch(() => setStats(null)); // si el backend no responde, ocultamos la franja
   }, []);
 
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
-      {/* Blobs decorativos de fondo */}
-      <div className="pointer-events-none absolute -top-32 -right-24 h-96 w-96 rounded-full bg-brand-300/30 blur-3xl dark:bg-brand-600/20" />
-      <div className="pointer-events-none absolute top-1/3 -left-24 h-80 w-80 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-800/20" />
+  useEffect(() => {
+    const move = (x: number, y: number) => {
+      orbRef.current?.style.setProperty('transform', `translate3d(${x - ORB / 2}px, ${y - ORB / 2}px, 0)`);
+    };
+    move(window.innerWidth / 2, window.innerHeight * 0.28); 
+    if (!window.matchMedia('(pointer: fine)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-      {/* Navbar */}
+    let frame = 0;
+    const onMove = (e: MouseEvent) => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        move(e.clientX, e.clientY);
+        frame = 0;
+      });
+    };
+
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+      <div
+        ref={orbRef}
+        className="pointer-events-none fixed left-0 top-0 z-0 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl will-change-transform dark:bg-brand-300/25"
+      />
+
+      <div
+        className="pointer-events-none fixed inset-0 z-0 dark:hidden"
+        style={{
+          background: 'radial-gradient(120% 100% at 50% 0%, transparent 40%, rgba(15,23,42,0.09) 100%)',
+        }}
+      />
+
+      <div className="pointer-events-none absolute -top-32 -right-24 h-96 w-96 rounded-full bg-brand-200/25 blur-3xl dark:bg-brand-600/20" />
+      <div className="pointer-events-none absolute top-1/3 -left-24 h-80 w-80 rounded-full bg-emerald-100/30 blur-3xl dark:bg-emerald-800/20" />
+
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <span className="flex items-center gap-2 text-xl font-bold text-brand-700 dark:text-brand-300">
           <TreePine size={24} /> PlantApp
@@ -135,15 +170,47 @@ export default function Landing() {
         </div>
         <div className="relative flex justify-center">
           <div className="absolute inset-0 rotate-6 rounded-3xl bg-gradient-to-br from-brand-400 to-emerald-300 opacity-20 blur-xl" />
-          <img
-            src={hero}
-            alt="Reforestación"
-            className="relative w-full max-w-md rounded-3xl object-cover shadow-2xl ring-1 ring-black/5"
-          />
+          <div className="relative w-full max-w-md">
+            {/* Tarjeta principal: mini "bosque" ilustrado */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-emerald-500 px-8 py-14 shadow-2xl ring-1 ring-black/5">
+              <TreePine className="absolute -left-3 -bottom-2 h-24 w-24 text-white/10" strokeWidth={1.5} />
+              <TreePine className="absolute right-4 top-6 h-14 w-14 rotate-6 text-white/15" strokeWidth={1.5} />
+              <Leaf className="absolute left-10 top-8 h-9 w-9 -rotate-12 text-white/20" strokeWidth={1.5} />
+              <Sprout className="absolute right-10 bottom-8 h-10 w-10 text-white/15" strokeWidth={1.5} />
+
+              <div className="relative mx-auto flex h-36 w-36 items-center justify-center">
+                <span className="absolute inset-0 animate-pulse rounded-full bg-white/10" />
+                <span className="absolute inset-3 rounded-full bg-white/15" />
+                <TreePine className="relative h-16 w-16 text-white drop-shadow-lg" strokeWidth={1.5} />
+              </div>
+              <p className="relative mt-6 text-center font-medium text-white/90">
+                Cada árbol que plantas queda en el mapa, para siempre.
+              </p>
+            </div>
+
+            <div className="absolute -top-6 -left-6 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-black/5 dark:bg-slate-800">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                <MapPin size={18} />
+              </span>
+              <div>
+                <p className="text-sm font-bold leading-tight text-slate-900 dark:text-white">Ubicación guardada</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">9.93° N, 84.08° O</p>
+              </div>
+            </div>
+
+            <div className="absolute -right-4 -bottom-5 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-black/5 dark:bg-slate-800">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                <Leaf size={18} />
+              </span>
+              <div>
+                <p className="text-sm font-bold leading-tight text-slate-900 dark:text-white">+1 árbol plantado</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">hace un momento</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Franja de impacto en vivo */}
       {stats && (
         <section className="relative z-10 mx-auto max-w-6xl px-6 pb-4">
           <div className="grid grid-cols-2 gap-4 rounded-2xl bg-white/70 p-6 shadow-sm ring-1 ring-slate-100 backdrop-blur sm:grid-cols-4 dark:bg-slate-900/70 dark:ring-slate-800">
